@@ -1,0 +1,10 @@
+{
+  // Confere que a simulação compila sem DOM nem canvas: é o que deixa ela
+  // rodar nos testes em Node (e, um dia, fora do navegador).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/sim"]
+}

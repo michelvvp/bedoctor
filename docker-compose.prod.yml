@@ -1,0 +1,15 @@
+# beDoctor: só o nginx com o build estático (web). Sem backend nem banco.
+# Sem container_name: a homologação sobe um segundo stack (-p bedoctor-homol)
+# do mesmo arquivo, mudando só FRONTEND_PORT.
+services:
+  web:
+    build: .
+    ports:
+      - "${FRONTEND_PORT:-8099}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped

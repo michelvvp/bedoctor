@@ -1,7 +1,7 @@
 // Formato declarativo de uma cirurgia. As definições ficam em `surgeries/`; a
 // simulação só conhece estes tipos.
 
-import type { OrganKind, SimState, StructureKind } from './types';
+import type { BodySite, OrganKind, SimState, StructureKind } from './types';
 import type { ToolId } from './tools';
 import type { Vec2 } from './vec';
 
@@ -55,6 +55,10 @@ export interface BleederDef {
   x: number;
   y: number;
   rate: number;
+  /** Sangue (ml) já na poça ao aparecer. Padrão 0. */
+  pool?: number;
+  /** `false` = só sangue derramado, sem sangrar (mancha a limpar). Padrão true. */
+  active?: boolean;
 }
 
 /** Configuração aplicada ao começar a cirurgia ou uma etapa. */
@@ -84,6 +88,8 @@ export interface ProcedureDef {
   description: string;
   /** Tempo de referência (s) para a nota de tempo. */
   parTimeSec: number;
+  /** Parte do corpo operada. Padrão: abdome. */
+  site?: BodySite;
   setup?: SetupDef;
   steps: StepDef[];
 }

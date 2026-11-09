@@ -201,6 +201,40 @@ function drawStructure(ctx: CanvasRenderingContext2D, state: SimState, s: Struct
   }
 }
 
+/**
+ * Sobra de fio de sutura, de `a` (nó) até `b` (agulha). Cortada, fica só a
+ * pontinha junto do nó; o resto sai do campo.
+ */
+function drawThread(ctx: CanvasRenderingContext2D, state: SimState, s: Structure): void {
+  structureA(state, s, point);
+  const ax = point.x;
+  const ay = point.y;
+  const dx = s.bx - ax;
+  const dy = s.by - ay;
+  const u = s.cut ? Math.min(s.cutAt, 0.15) : 1;
+  // Fio levemente curvo (ponto de controle deslocado para o lado).
+  const cx = ax + dx * 0.5 * u - dy * 0.08 * u;
+  const cy = ay + dy * 0.5 * u + dx * 0.08 * u;
+  ctx.strokeStyle = COLORS.thread;
+  ctx.lineWidth = 1.2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.quadraticCurveTo(cx, cy, ax + dx * u, ay + dy * u);
+  ctx.stroke();
+  if (s.cut) return;
+  // Agulha curva na ponta.
+  const angle = Math.atan2(dy, dx);
+  ctx.strokeStyle = COLORS.metalDark;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.arc(s.bx + Math.cos(angle) * 6, s.by + Math.sin(angle) * 6, 6, angle + Math.PI, angle + Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = COLORS.metal;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+}
+
 /** Mancha de sangue: círculo com lóbulos fixos por id (não muda de quadro a quadro). */
 function drawPool(ctx: CanvasRenderingContext2D, b: Bleeder): void {
   const r = poolRadius(b.pool);
@@ -324,6 +358,7 @@ export function drawSurgical(ctx: CanvasRenderingContext2D, state: SimState, tim
     }
     ctx.clip();
     state.structures.forEach((s) => {
+      if (s.kind === 'thread') return;
       const organ = s.organId ? state.organs.find((o) => o.id === s.organId) : undefined;
       if (!organ || (!organLifted(organ) && !organ.removed)) drawStructure(ctx, state, s);
     });
@@ -346,4 +381,5 @@ export function drawSurgical(ctx: CanvasRenderingContext2D, state: SimState, tim
   for (const b of state.bleeders) drawPool(ctx, b);
   for (const b of state.bleeders) drawBleeder(ctx, b, time);
   state.incisions.forEach((inc, i) => drawStitches(ctx, state, inc, i));
+  for (const s of state.structures) if (s.kind === 'thread') drawThread(ctx, state, s);
 }

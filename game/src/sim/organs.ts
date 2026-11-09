@@ -85,8 +85,9 @@ export function structureA(state: Readonly<SimState>, s: Structure, out: { x: nu
 
 const a = { x: 0, y: 0 };
 
-/** A estrutura está ao alcance neste ponto (cavidade aberta, ou no órgão puxado para fora). */
+/** A estrutura está ao alcance neste ponto (fio na pele, cavidade aberta, ou no órgão puxado para fora). */
 function structureReachable(state: SimState, s: Structure, x: number, y: number): boolean {
+  if (s.kind === 'thread') return true;
   if (s.organId) {
     const organ = findOrgan(state, s.organId);
     if (organ && organLifted(organ)) return true;

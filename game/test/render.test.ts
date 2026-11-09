@@ -6,7 +6,8 @@ import { drawInstrument } from '../src/render/instruments';
 import { drawScene } from '../src/render/scene';
 import { drawSurgical } from '../src/render/surgical';
 import { View } from '../src/render/view';
-import { TOOL_ORDER } from '../src/sim';
+import { Simulation, TOOL_ORDER } from '../src/sim';
+import { sutureTutorial } from '../src/surgeries/sutureTutorial';
 import { click, drag, sandbox, straightIncision } from './helpers';
 
 function fakeContext(): { ctx: CanvasRenderingContext2D; calls: Map<string, number> } {
@@ -71,6 +72,19 @@ describe('render', () => {
     expect(calls.get('fill')).toBeGreaterThan(10);
     expect(calls.get('stroke')).toBeGreaterThan(10);
     expect(calls.get('clip')).toBeGreaterThan(0);
+  });
+
+  it('desenha o antebraço do tutorial e o fio de sutura, inteiro e cortado', () => {
+    const sim = new Simulation(sutureTutorial);
+    sim.applySetup({ structures: [{ id: 'fio', kind: 'thread', a: { x: 74, y: -10 }, b: { x: 132, y: -50 } }] });
+    const { ctx, calls } = fakeContext();
+    drawScene(ctx, sim.state.site);
+    drawSurgical(ctx, sim.state, 0.5);
+    click(sim, 'scissors', 103, -30);
+    expect(sim.state.structures[0]!.cut).toBe(true);
+    drawSurgical(ctx, sim.state, 0.6);
+    expect(calls.get('ellipse')).toBeGreaterThan(0);
+    expect(calls.get('quadraticCurveTo')).toBeGreaterThan(2);
   });
 
   it('a câmera ida e volta entre tela e mundo', () => {

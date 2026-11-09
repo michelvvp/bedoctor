@@ -8,10 +8,25 @@ fecha com sutura. No fim sai uma nota de 0 a 100, com estrelas.
 Sem login, sem backend: build estático. Melhor nota e melhor tempo de cada
 cirurgia ficam no `localStorage` do navegador.
 
-> Estado atual: motor do jogo pronto, com uma cirurgia **Teste** (cortar a pele,
-> estancar, dar 3 pontos) e uma interface provisória em texto. As cirurgias de
-> verdade (tutorial de sutura e apendicectomia) e os menus definitivos vêm a
-> seguir.
+> Estado atual: motor do jogo pronto, com a cirurgia 1 (tutorial de sutura) e
+> uma interface provisória em texto. A apendicectomia e os menus definitivos vêm
+> a seguir.
+
+## Cirurgias disponíveis
+
+1. **Sutura de corte** (tutorial) — um corte já aberto no antebraço, sangrando
+   devagar. Ensina os instrumentos, uma etapa por vez:
+   1. limpar o sangue da pele com a **gaze**;
+   2. aspirar o que sobrou dentro do corte com o **aspirador**;
+   3. estancar os 2 pontos que sangram com o **cautério**;
+   4. segurar a borda do corte com a **pinça**;
+   5. dar 5 pontos com o **porta-agulha**, nas marcas;
+   6. cortar a sobra do fio com a **tesoura**;
+   7. fim: resultado e nota.
+
+   É tolerante: vitais estáveis e sangramento lento (parado, perde menos de
+   100 ml em 2 minutos). Estancar um ponto com a gaze apertada também vale.
+   Bisturi e afastador ficam para a apendicectomia.
 
 ## Como jogar
 
@@ -21,7 +36,7 @@ cirurgia ficam no `localStorage` do navegador.
 - **Afastador**: pegue a borda do corte e arraste para fora para abrir;
   arraste de volta para fechar. Solto, ele mantém a abertura.
 - **Pinça**: segura e puxa órgãos (com a cavidade aberta) ou a borda do corte.
-- **Tesoura**: clique em cima de uma estrutura (vaso, ligamento) ou passe por
+- **Tesoura**: clique em cima de uma estrutura (vaso, ligamento, sobra de fio) ou passe por
   cima dela arrastando para cortar. Vaso cortado sem ligar sangra forte.
 - **Gaze**: esfregue para absorver o sangue; apertada em cima de um
   sangramento pequeno, estanca em pouco mais de 1 s.

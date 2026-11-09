@@ -41,6 +41,7 @@ import { createVitals, updateVitals } from './vitals';
 
 export function createState(): SimState {
   return {
+    site: 'abdomen',
     time: 0,
     outcome: 'running',
     stepIndex: 0,
@@ -83,6 +84,7 @@ export class Simulation implements SimCore {
     seed = 1,
   ) {
     this.rng = new Rng(seed);
+    this.state.site = procedure.site ?? 'abdomen';
     if (procedure.setup) this.applySetup(procedure.setup);
     const first = procedure.steps[0];
     if (first?.setup) this.applySetup(first.setup);
@@ -103,7 +105,9 @@ export class Simulation implements SimCore {
     }
     for (const def of setup.organs ?? []) state.organs.push(createOrgan(def));
     for (const def of setup.structures ?? []) state.structures.push(createStructure(def));
-    for (const def of setup.bleeders ?? []) addBleeder(this, def.x, def.y, def.rate);
+    for (const def of setup.bleeders ?? []) {
+      addBleeder(this, def.x, def.y, def.rate, def.pool ?? 0, def.active ?? true);
+    }
   }
 
   /** Avança um passo fixo (FIXED_DT) com a entrada dada. */

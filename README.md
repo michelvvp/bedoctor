@@ -8,14 +8,17 @@ fecha com sutura. No fim sai uma nota de 0 a 100, com estrelas.
 Sem login, sem backend: build estático. Melhor nota e melhor tempo de cada
 cirurgia ficam no `localStorage` do navegador.
 
-> Estado atual: motor do jogo pronto, com uma cirurgia **Teste** (cortar a pele,
-> estancar, dar 3 pontos) e uma interface provisória em texto. As cirurgias de
-> verdade (tutorial de sutura e apendicectomia) e os menus definitivos vêm a
-> seguir.
+> Estado atual: motor do jogo e menus/HUD em Liquid Glass prontos, com uma
+> cirurgia **Teste** (cortar a pele, estancar, dar 3 pontos). As cirurgias de
+> verdade (tutorial de sutura e apendicectomia) vêm a seguir.
 
 ## Como jogar
 
-- Escolha a cirurgia no menu e siga a instrução de cada etapa.
+- Escolha a cirurgia no menu (cada uma mostra seu recorde) e siga a instrução
+  da etapa no painel do canto superior esquerdo. A bandeja à esquerda troca o
+  instrumento (o sugerido para a etapa tem realce); o monitor no canto superior
+  direito mostra FC, pressão, sangue perdido e o ECG, e pisca em vermelho no
+  estado crítico. Ao fim, a tela de resultado mostra nota, estrelas e motivos.
 - **Bisturi**: arraste em cima da linha tracejada. Cada passada inteira abre uma
   camada (pele, gordura, músculo). Sair da linha é erro e sangra.
 - **Afastador**: pegue a borda do corte e arraste para fora para abrir;

@@ -1,7 +1,8 @@
-import './style.css';
+import './design-system.css';
+import './theme.css';
 import { Game } from './game/game';
 import type { StorageLike } from './game/progress';
-import { mountProvisionalUi } from './ui/provisional';
+import { mountUi } from './ui/mount';
 
 /** localStorage, se o navegador deixar usar. */
 function storage(): StorageLike | null {
@@ -18,4 +19,4 @@ if (!(canvas instanceof HTMLCanvasElement) || !uiRoot) throw new Error('index.ht
 
 const game = new Game(canvas, storage());
 game.subscribe((state) => document.body.classList.toggle('playing', state.phase === 'playing'));
-mountProvisionalUi(uiRoot, game);
+mountUi(uiRoot, game);

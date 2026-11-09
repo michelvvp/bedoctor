@@ -6,7 +6,7 @@ import type { KeyAction } from '../input/keys';
 import { Renderer, type CursorView } from '../render/renderer';
 import { readEcg, Simulation, TOOL_ORDER, type ProcedureDef, type SimEvent, type ToolId, type ToolInput } from '../sim';
 import { activeBleeders } from '../sim/bleeding';
-import { SYSTOLIC_BASE } from '../sim/tuning';
+import { STARS_2_MIN, STARS_3_MIN, SYSTOLIC_BASE } from '../sim/tuning';
 import { SURGERIES, findSurgery } from '../surgeries';
 import type {
   FeedbackInfo,
@@ -30,6 +30,12 @@ const MAX_FRAME = 0.25;
 const SIM_SEED = 1;
 
 const TOOLS = toolInfos(TOOL_ORDER);
+
+/** Estrelas de uma nota salva (as mesmas faixas da nota da cirurgia). */
+function starsFor(score: number | undefined): 1 | 2 | 3 | null {
+  if (score === undefined) return null;
+  return score >= STARS_3_MIN ? 3 : score >= STARS_2_MIN ? 2 : 1;
+}
 
 export class Game implements GameApi {
   private readonly renderer: Renderer;
@@ -293,6 +299,7 @@ export class Game implements GameApi {
       stepCount: s.steps.length,
       parTimeSec: s.parTimeSec,
       bestScore: progress[s.id]?.bestScore ?? null,
+      bestStars: starsFor(progress[s.id]?.bestScore),
       bestTimeSec: progress[s.id]?.bestTimeSec ?? null,
     }));
   }

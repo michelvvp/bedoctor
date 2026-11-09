@@ -8,6 +8,7 @@ import { cavityReachable } from './tissue';
 import {
   FORCEPS_GRAB_MARGIN,
   LIGATE_RADIUS,
+  LIGATURE_CUT_MARGIN,
   ORGAN_LIFT_DISTANCE,
   ORGAN_REMOVE_DISTANCE,
   SCISSORS_RADIUS,
@@ -32,6 +33,7 @@ export function createOrgan(def: OrganDef): Organ {
     tether: def.tether ?? DEFAULT_TETHER,
     removable: def.removable ?? false,
     removed: false,
+    injuryRate: def.injuryRate ?? 0,
   };
 }
 
@@ -47,9 +49,15 @@ export function createStructure(def: StructureDef): Structure {
     bleedRate: def.bleedRate ?? 0,
     ligatable: def.ligatable ?? false,
     protected: def.protected ?? false,
+    ligateAt: def.ligateAt ?? -1,
     ligated: false,
+    ligatedAt: 0,
     cut: false,
     cutAt: 0,
+    cutX: 0,
+    cutY: 0,
+    pieceDx: 0,
+    pieceDy: 0,
   };
 }
 
@@ -64,6 +72,40 @@ export function organDistance(organ: Organ, x: number, y: number): number {
   return (
     distanceToSegment(x, y, organ.x - ux, organ.y - uy, organ.x + ux, organ.y + uy) - organ.radius
   );
+}
+
+/** Pontos amostrados em cada eixo para medir se duas cápsulas se encostam. */
+const OVERLAP_SAMPLES = 9;
+
+/** Distância (aproximada) entre os contornos de duas cápsulas (negativa = se sobrepõem). */
+export function organGap(p: Organ, q: Organ): number {
+  const qx = Math.cos(q.angle) * q.halfLength;
+  const qy = Math.sin(q.angle) * q.halfLength;
+  const px = Math.cos(p.angle) * p.halfLength;
+  const py = Math.sin(p.angle) * p.halfLength;
+  let best = Infinity;
+  for (let i = 0; i < OVERLAP_SAMPLES; i++) {
+    const u = (i / (OVERLAP_SAMPLES - 1)) * 2 - 1;
+    best = Math.min(
+      best,
+      distanceToSegment(p.x + px * u, p.y + py * u, q.x - qx, q.y - qy, q.x + qx, q.y + qy),
+      distanceToSegment(q.x + qx * u, q.y + qy * u, p.x - px, p.y - py, p.x + px, p.y + py),
+    );
+  }
+  return best - p.radius - q.radius;
+}
+
+/**
+ * O órgão está à vista: nenhum outro desenhado por cima (depois dele na lista)
+ * encosta nele.
+ */
+export function organUncovered(state: Readonly<SimState>, organ: Organ): boolean {
+  const index = state.organs.indexOf(organ);
+  for (let i = index + 1; i < state.organs.length; i++) {
+    const other = state.organs[i]!;
+    if (!other.removed && organGap(organ, other) < 0) return false;
+  }
+  return true;
 }
 
 /** O órgão foi puxado para fora da cavidade (desenhado por cima da pele). */
@@ -149,24 +191,56 @@ export function releaseForcepsOrgan(core: SimCore): void {
 
 // --- Tesoura ----------------------------------------------------------------------
 
+/**
+ * O corte em `u` deixa o coto (lado de `b`) aberto: sem ligadura, ou abaixo
+ * do nó (além da folga LIGATURE_CUT_MARGIN).
+ */
+function stumpOpen(s: Structure, u: number, length: number): boolean {
+  return !s.ligated || u > s.ligatedAt + LIGATURE_CUT_MARGIN / Math.max(1, length);
+}
+
 function cutStructure(core: SimCore, s: Structure, u: number): void {
   const state = core.state;
   structureA(state, s, a);
   const x = a.x + (s.bx - a.x) * u;
   const y = a.y + (s.by - a.y) * u;
+  const open = stumpOpen(s, u, distance(a.x, a.y, s.bx, s.by));
   s.cut = true;
   s.cutAt = u;
+  s.cutX = x;
+  s.cutY = y;
+  s.pieceDx = x - a.x;
+  s.pieceDy = y - a.y;
   core.emit('structureCut', x, y);
-  if (s.protected) {
+  // Estrutura a preservar, ou ligável cortada sem ligar / abaixo do nó: erro grave.
+  if (s.protected || (s.ligatable && open)) {
     state.errors.protectedCut++;
     core.emit('protectedCut', x, y);
   }
-  if (s.bleedRate > 0 && !s.ligated) addBleeder(core, x, y, s.bleedRate);
+  if (s.bleedRate > 0 && open) addBleeder(core, x, y, s.bleedRate);
 }
 
 /**
- * Tesoura apertada: no clique, corta a estrutura sob a ponta; arrastando, corta
- * a que o caminho da ponta cruzar.
+ * Tesoura em cima de um órgão (o de cima, se houver vários): se ele sangra
+ * quando ferido (`injuryRate`), é lesão: erro grave e sangramento forte.
+ */
+function injureOrgan(core: SimCore, x: number, y: number): void {
+  const state = core.state;
+  for (let i = state.organs.length - 1; i >= 0; i--) {
+    const organ = state.organs[i]!;
+    if (organ.removed || organDistance(organ, x, y) > 0) continue;
+    if (!organLifted(organ) && !cavityReachable(state, x, y)) continue;
+    if (organ.injuryRate <= 0) return;
+    state.errors.protectedCut++;
+    core.emit('protectedCut', x, y);
+    addBleeder(core, x, y, organ.injuryRate);
+    return;
+  }
+}
+
+/**
+ * Tesoura apertada: no clique, corta a estrutura sob a ponta (sem estrutura,
+ * fere o órgão embaixo); arrastando, corta a que o caminho da ponta cruzar.
  */
 export function useScissors(core: SimCore, fromX: number, fromY: number, pressed: boolean): void {
   const state = core.state;
@@ -189,6 +263,7 @@ export function useScissors(core: SimCore, fromX: number, fromY: number, pressed
     cutStructure(core, s, u);
     return;
   }
+  if (pressed) injureOrgan(core, x, y);
 }
 
 function projectU(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
@@ -201,16 +276,29 @@ function projectU(px: number, py: number, ax: number, ay: number, bx: number, by
 
 // --- Porta-agulha: ligadura -------------------------------------------------------
 
-/** Clique do porta-agulha numa estrutura ligável e inteira: amarra o fio. */
+/**
+ * Clique do porta-agulha numa estrutura ligável e inteira: amarra o fio. Com
+ * marca de ligadura, só amarra clicando na marca.
+ */
 export function pressNeedleLigate(core: SimCore): boolean {
   const state = core.state;
   const { x, y } = state.tool;
   for (const s of state.structures) {
     if (s.cut || s.ligated || !s.ligatable) continue;
     structureA(state, s, a);
-    if (distanceToSegment(x, y, a.x, a.y, s.bx, s.by) > LIGATE_RADIUS) continue;
+    let u: number;
+    if (s.ligateAt >= 0) {
+      u = s.ligateAt;
+      const mx = a.x + (s.bx - a.x) * u;
+      const my = a.y + (s.by - a.y) * u;
+      if (distance(x, y, mx, my) > LIGATE_RADIUS) continue;
+    } else {
+      if (distanceToSegment(x, y, a.x, a.y, s.bx, s.by) > LIGATE_RADIUS) continue;
+      u = projectU(x, y, a.x, a.y, s.bx, s.by);
+    }
     if (!structureReachable(state, s, x, y)) continue;
     s.ligated = true;
+    s.ligatedAt = u;
     core.emit('ligate', x, y);
     return true;
   }

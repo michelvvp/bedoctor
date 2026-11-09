@@ -39,13 +39,19 @@ export const INCISION_SLIT = 1.5;
 export const RETRACTOR_MAX_OPEN = 45;
 /** Folga (mm) além da borda para o afastador pegar a incisão. */
 export const RETRACTOR_GRAB_MARGIN = 14;
+/** Quanto (mm) o afastador precisa ser puxado para fora para contar aquela borda como afastada. */
+export const RETRACTOR_SIDE_PULL = 3;
 /** Abertura máxima (meia-largura, mm) que a pinça segura na borda. */
 export const FORCEPS_MAX_OPEN = 12;
 /** Abertura mínima (meia-largura, mm) para alcançar os órgãos com a pinça. */
 export const ORGAN_ACCESS_MIN_OPEN = 15;
 
-/** Chance de um trecho recém-cortado sangrar, por camada (pele, gordura, músculo). */
-export const CUT_BLEED_CHANCE = [0.12, 0.18, 0.25] as const;
+/**
+ * Chance de um trecho recém-cortado sangrar, por camada (pele, gordura,
+ * músculo). Medido na apendicectomia em ritmo humano (10 s por passada):
+ * ~8 sangramentos nas 3 camadas e 650–950 ml perdidos até estancar tudo.
+ */
+export const CUT_BLEED_CHANCE = [0.1, 0.08, 0.08] as const;
 /** Vazão (ml/s) mínima e máxima de um sangramento de corte na linha. */
 export const CUT_BLEED_MIN_RATE = 0.8;
 export const CUT_BLEED_MAX_RATE = 2.5;
@@ -97,8 +103,14 @@ export const SUTURE_OFFSET = 9;
 export const STITCH_RADIUS = 7;
 /** Abertura (meia-largura, mm) máxima da incisão para conseguir suturar. */
 export const STITCH_MAX_OPEN = 2;
-/** Distância (mm) do clique do porta-agulha a uma estrutura para ligar. */
+/** Distância (mm) do clique do porta-agulha a uma estrutura (ou à marca da ligadura) para ligar. */
 export const LIGATE_RADIUS = 7;
+/**
+ * Folga (mm) além do nó, para o lado de `b`, em que a tesoura ainda corta sem
+ * deixar o coto aberto. Mais longe que isso, o corte fica abaixo da ligadura:
+ * sangra e é erro.
+ */
+export const LIGATURE_CUT_MARGIN = 2;
 
 // --- Órgãos e estruturas --------------------------------------------------------
 

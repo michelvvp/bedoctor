@@ -34,7 +34,7 @@ export type SimEventType =
   | 'ligate'
   /** Estrutura cortada com tesoura. */
   | 'structureCut'
-  /** Cortou uma estrutura a preservar (erro grave). */
+  /** Cortou onde não devia: estrutura a preservar, órgão (lesão) ou coto sem ligadura (erro grave). */
   | 'protectedCut'
   /** Órgão retirado do corpo. */
   | 'organRemoved'

@@ -8,8 +8,8 @@ fecha com sutura. No fim sai uma nota de 0 a 100, com estrelas.
 Sem login, sem backend: build estático. Melhor nota e melhor tempo de cada
 cirurgia ficam no `localStorage` do navegador.
 
-> Estado atual: motor do jogo, menus/HUD em Liquid Glass e a cirurgia 1
-> (tutorial de sutura) prontos. A apendicectomia vem a seguir.
+> Estado atual: motor do jogo, menus/HUD em Liquid Glass e as duas cirurgias
+> da 1ª versão (tutorial de sutura e apendicectomia) prontos.
 
 ## Cirurgias disponíveis
 
@@ -27,6 +27,34 @@ cirurgia ficam no `localStorage` do navegador.
    100 ml em 2 minutos). Estancar um ponto com a gaze apertada também vale.
    Bisturi e afastador ficam para a apendicectomia.
 
+2. **Apendicectomia** — tirar o apêndice inflamado por um corte oblíquo no
+   lado direito da barriga, abaixo do umbigo (na tela, à esquerda: o paciente
+   está de barriga para cima). Usa os 8 instrumentos:
+   1. cortar a pele seguindo a linha tracejada com o **bisturi**;
+   2. passar o **bisturi** na linha mais duas vezes: gordura e fáscia, até a
+      cavidade;
+   3. abrir com o **afastador**: puxar uma borda para fora e depois a outra;
+   4. estancar o que sangra (os cortes e 2 vasos da parede): **aspirador** na
+      poça e **cautério** no ponto;
+   5. afastar com a **pinça** as alças do intestino (rosadas) até o apêndice
+      (vermelho, inflamado) aparecer;
+   6. ligar a base do apêndice com o **porta-agulha**, clicando na marca roxa;
+   7. cortar a base com a **tesoura** entre o nó e o apêndice e arrastar o
+      apêndice com a **pinça** até a cuba, à direita do campo;
+   8. conferir que nada sangra e retirar o **afastador** (arrastar a borda de
+      volta);
+   9. dar 5 pontos na pele com o **porta-agulha** e cortar a sobra do fio com a
+      **tesoura**;
+   10. fim: resultado e nota (tempo de referência: 5 minutos).
+
+   Sangra de verdade: só os 2 vasos da parede somam 7 ml/s (o tutorial, 0,6),
+   e os cortes das camadas somam mais; sem estancar nada, a parada vem em cerca
+   de 1 minuto e meio. Tesoura no
+   lugar errado é erro grave e sangra forte: na alça do intestino, no ceco, no
+   corpo do apêndice, no mesentério que prende as alças, ou na base abaixo do
+   nó (ou antes de ligar). Seguindo as instruções e estancando sem demora, dá
+   para terminar com folga.
+
 ## Como jogar
 
 - Escolha a cirurgia no menu (cada uma mostra seu recorde) e siga a instrução
@@ -37,16 +65,21 @@ cirurgia ficam no `localStorage` do navegador.
 - **Bisturi**: arraste em cima da linha tracejada. Cada passada inteira abre uma
   camada (pele, gordura, músculo). Sair da linha é erro e sangra.
 - **Afastador**: pegue a borda do corte e arraste para fora para abrir;
-  arraste de volta para fechar. Solto, ele mantém a abertura.
+  arraste de volta para fechar. Solto, ele mantém a abertura. Cada borda
+  puxada para fora ganha uma lâmina; a apendicectomia pede as duas.
 - **Pinça**: segura e puxa órgãos (com a cavidade aberta) ou a borda do corte.
+  Órgão preso tem folga limitada; solto e arrastado para longe (até a cuba),
+  sai do corpo ao soltar.
 - **Tesoura**: clique em cima de uma estrutura (vaso, ligamento, sobra de fio) ou passe por
-  cima dela arrastando para cortar. Vaso cortado sem ligar sangra forte.
+  cima dela arrastando para cortar. Estrutura ligável cortada sem ligar, ou do
+  lado errado do nó, sangra forte e é erro. Clique em cima de um órgão
+  (intestino, apêndice) fere o órgão: erro grave e sangramento.
 - **Gaze**: esfregue para absorver o sangue; apertada em cima de um
   sangramento pequeno, estanca em pouco mais de 1 s.
 - **Aspirador**: segure o botão em cima da poça para puxar o sangue.
 - **Porta-agulha**: clique numa marca de sutura e depois na marca do outro lado
   para dar o ponto. Feche o afastador antes. Clicado numa estrutura inteira,
-  amarra (liga) ela.
+  amarra (liga) ela; se ela tem marca roxa de ligadura, só amarra na marca.
 - **Cautério**: clique no sangramento para estancar. Com poça grande em cima,
   aspire antes. Em tecido sadio queima (erro leve).
 

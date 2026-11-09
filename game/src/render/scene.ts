@@ -18,6 +18,43 @@ export function drawScene(ctx: CanvasRenderingContext2D, site: BodySite = 'abdom
   if (site === 'abdomen') drawNavel(ctx);
   else drawLimbShading(ctx);
   drawFieldClamps(ctx);
+  if (site === 'abdomen') drawBasin(ctx);
+}
+
+/** Cuba-rim no campo, à direita da janela: para onde vão os órgãos retirados. */
+export const BASIN_X = 232;
+export const BASIN_Y = 30;
+
+/** Cuba-rim de metal (forma de feijão) vista de cima. */
+function drawBasin(ctx: CanvasRenderingContext2D): void {
+  ctx.save();
+  ctx.translate(BASIN_X, BASIN_Y);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  basinPath(ctx, 3, 5, 1);
+  ctx.fill();
+  ctx.fillStyle = COLORS.metalMid;
+  basinPath(ctx, 0, 0, 1);
+  ctx.fill();
+  ctx.fillStyle = COLORS.metal;
+  basinPath(ctx, 0, 0, 0.8);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(-8, -46, 7, 14, -0.3, Math.PI * 1.1, Math.PI * 1.7);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Contorno de feijão (côncavo à esquerda), com escala `k`. */
+function basinPath(ctx: CanvasRenderingContext2D, dx: number, dy: number, k: number): void {
+  ctx.beginPath();
+  ctx.moveTo(dx - 4 * k, dy - 62 * k);
+  ctx.bezierCurveTo(dx + 40 * k, dy - 66 * k, dx + 40 * k, dy + 66 * k, dx - 4 * k, dy + 62 * k);
+  ctx.bezierCurveTo(dx - 26 * k, dy + 58 * k, dx - 30 * k, dy + 36 * k, dx - 16 * k, dy + 20 * k);
+  ctx.quadraticCurveTo(dx - 8 * k, dy, dx - 16 * k, dy - 20 * k);
+  ctx.bezierCurveTo(dx - 30 * k, dy - 36 * k, dx - 26 * k, dy - 58 * k, dx - 4 * k, dy - 62 * k);
+  ctx.closePath();
 }
 
 /** Paciente deitado, campo cobrindo o corpo, janela no abdome. */

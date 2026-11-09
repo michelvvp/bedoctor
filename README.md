@@ -114,6 +114,11 @@ npm --prefix game run build    # build estático em game/dist
 
 ## Deploy
 
-Planejado (ainda não existe nesta versão): `./deploy.sh` na raiz sobe o build
-estático num nginx, stack `bedoctor`, porta 8099 (9099 na homologação), em
-https://bedoctor.michel-dev.com.
+`./deploy.sh` na raiz puxa do GitHub (quando há upstream) e recria o stack
+`bedoctor`: um serviço `web` (nginx) servindo o build estático de `game/dist`,
+porta 8099 (`FRONTEND_PORT`; 9099 na homologação), em
+https://bedoctor.michel-dev.com. Sem backend, banco nem `.env` obrigatório.
+
+Arquivos: `Dockerfile` (Node compila, nginx serve), `nginx.conf` (SPA fallback,
+cache longo só em `/assets/` com hash), `docker-compose.prod.yml`,
+`devflow.conf` (usado pelo `devflow-ops.sh`).

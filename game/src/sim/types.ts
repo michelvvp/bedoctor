@@ -32,6 +32,11 @@ export interface Incision {
   openWidth: number;
   /** Meia-largura (mm) que a pinça está segurando aberta agora. */
   heldOpen: number;
+  /**
+   * Bordas em que o afastador foi puxado para fora: bit 1 = lado 1 (normal da
+   * guia), bit 2 = lado -1. Zera quando o afastador fecha de todo.
+   */
+  retractedSides: number;
   stitches: Stitch[];
   /** Todos os pontos dados. */
   sutured: boolean;
@@ -70,6 +75,8 @@ export interface Organ {
   /** Pode ser retirado do corpo depois de solto. */
   removable: boolean;
   removed: boolean;
+  /** Vazão (ml/s) do sangramento se a tesoura cortar o órgão (lesão, erro grave). 0 = a tesoura não faz nada. */
+  injuryRate: number;
 }
 
 /**
@@ -94,15 +101,28 @@ export interface Structure {
   ligatable: boolean;
   /** Cortar é erro grave (estrutura a preservar). */
   protected: boolean;
+  /** Marca (0–1 ao longo de a–b) onde a ligadura deve ser feita; -1 = em qualquer ponto. */
+  ligateAt: number;
   ligated: boolean;
+  /** Onde está o nó (0–1 ao longo de a–b). */
+  ligatedAt: number;
   cut: boolean;
   /** Onde foi cortada (0–1 ao longo de a–b). */
   cutAt: number;
+  /** Ponto do corte na mesa, na hora do corte: o coto (até `b`) fica parado ali. */
+  cutX: number;
+  cutY: number;
+  /** Do ponto `a` até o corte, na hora do corte: o pedaço que acompanha o órgão. */
+  pieceDx: number;
+  pieceDy: number;
 }
 
 export type Grab =
-  /** `startDistance`: distância da guia ao pegar; `startOpen`: abertura ao pegar. */
-  | { kind: 'retractor' | 'edge'; incision: number; startDistance: number; startOpen: number }
+  /**
+   * `startDistance`: distância da guia ao pegar; `startOpen`: abertura ao pegar;
+   * `side`: lado da guia pego (1 ou -1).
+   */
+  | { kind: 'retractor' | 'edge'; incision: number; startDistance: number; startOpen: number; side: number }
   | { kind: 'organ'; organ: number; dx: number; dy: number };
 
 export interface PendingStitch {
@@ -156,6 +176,7 @@ export interface ErrorCounts {
   offGuide: number;
   burn: number;
   stitchMiss: number;
+  /** Corte onde não devia: estrutura a preservar, órgão (lesão) ou coto sem ligadura. */
   protectedCut: number;
 }
 

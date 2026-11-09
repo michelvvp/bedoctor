@@ -25,6 +25,7 @@ export const COLORS = {
   bowelDark: '#c97a86',
   appendix: '#e07f7a',
   appendixDark: '#b85a57',
+  inflamed: 'rgba(220, 38, 38, 0.35)',
   organ: '#d98c8c',
   organDark: '#ad6262',
   vessel: '#c0263a',

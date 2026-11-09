@@ -21,6 +21,7 @@ import {
   ORGAN_ACCESS_MIN_OPEN,
   RETRACTOR_GRAB_MARGIN,
   RETRACTOR_MAX_OPEN,
+  RETRACTOR_SIDE_PULL,
   STITCH_MAX_OPEN,
   STITCH_RADIUS,
   SUTURE_OFFSET,
@@ -48,6 +49,7 @@ export function createIncision(def: IncisionDef): Incision {
     strokes: [],
     openWidth: 0,
     heldOpen: 0,
+    retractedSides: 0,
     stitches: [],
     sutured: false,
   };
@@ -251,18 +253,30 @@ export function pressRetractor(core: SimCore): void {
     incision: index,
     startDistance: hit.distance,
     startOpen: inc.openWidth,
+    side: hit.side < 0 ? -1 : 1,
   };
 }
 
-/** Arrastar o afastador para fora abre; para dentro, fecha. Soltar mantém. */
+/**
+ * Arrastar o afastador para fora abre; para dentro, fecha. Soltar mantém. A
+ * borda puxada para fora fica marcada em `retractedSides`; fechado de todo,
+ * o afastador sai e as marcas zeram.
+ */
 export function dragRetractor(core: SimCore): void {
   const state = core.state;
   const grab = state.tool.grab;
   if (grab?.kind !== 'retractor') return;
   const inc = state.incisions[grab.incision]!;
   projectOnPolyline(inc.guide, state.tool.x, state.tool.y, hit);
-  const open = grab.startOpen + hit.distance - grab.startDistance;
-  inc.openWidth = Math.min(RETRACTOR_MAX_OPEN, Math.max(0, open));
+  const pulled = hit.distance - grab.startDistance;
+  inc.openWidth = Math.min(RETRACTOR_MAX_OPEN, Math.max(0, grab.startOpen + pulled));
+  if (pulled >= RETRACTOR_SIDE_PULL) inc.retractedSides |= grab.side > 0 ? 1 : 2;
+  if (inc.openWidth === 0) inc.retractedSides = 0;
+}
+
+/** Quantas bordas (0–2) o afastador está segurando abertas. */
+export function retractedSideCount(incision: Incision): number {
+  return (incision.retractedSides & 1) + ((incision.retractedSides >> 1) & 1);
 }
 
 /** Pinça na borda: segura aberta enquanto o botão estiver apertado. */
@@ -273,7 +287,13 @@ export function pressForcepsEdge(core: SimCore): boolean {
   if (index < 0) return false;
   const inc = state.incisions[index]!;
   projectOnPolyline(inc.guide, x, y, hit);
-  state.tool.grab = { kind: 'edge', incision: index, startDistance: hit.distance, startOpen: 0 };
+  state.tool.grab = {
+    kind: 'edge',
+    incision: index,
+    startDistance: hit.distance,
+    startOpen: 0,
+    side: hit.side < 0 ? -1 : 1,
+  };
   return true;
 }
 

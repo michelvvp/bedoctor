@@ -92,7 +92,11 @@ export function computeScore(state: Readonly<SimState>, parTimeSec: number): Sco
   if (e.offGuide > 0) reasons.push(`${plural(e.offGuide, 'corte', 'cortes')} fora da linha.`);
   if (e.burn > 0) reasons.push(`${plural(e.burn, 'queimadura', 'queimaduras')} de cautério em tecido sadio.`);
   if (e.stitchMiss > 0) reasons.push(`${plural(e.stitchMiss, 'ponto errado', 'pontos errados')}.`);
-  if (e.protectedCut > 0) reasons.push('Cortou uma estrutura que devia ser preservada.');
+  if (e.protectedCut > 0) {
+    reasons.push(
+      `${plural(e.protectedCut, 'corte', 'cortes')} onde não devia (estrutura a preservar, órgão ou coto sem ligadura).`,
+    );
+  }
   if (!arrest) {
     reasons.push(
       time >= 1

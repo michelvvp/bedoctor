@@ -36,6 +36,8 @@ export interface OrganDef {
   /** Quanto pode sair do lugar enquanto preso. Padrão 30 mm. */
   tether?: number;
   removable?: boolean;
+  /** Vazão (ml/s) se a tesoura cortar o órgão (lesão, erro grave). Padrão 0: a tesoura não faz nada. */
+  injuryRate?: number;
 }
 
 export interface StructureDef {
@@ -48,6 +50,11 @@ export interface StructureDef {
   /** Vazão (ml/s) se cortada sem ligar. Padrão 0. */
   bleedRate?: number;
   ligatable?: boolean;
+  /**
+   * Marca (0–1 ao longo de a–b) onde ligar: o porta-agulha só amarra ali. Sem
+   * marca, amarra onde clicar.
+   */
+  ligateAt?: number;
   protected?: boolean;
 }
 

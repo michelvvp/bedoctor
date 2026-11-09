@@ -1,7 +1,8 @@
 // Consultas sobre o estado para escrever as condições de conclusão das etapas.
 
 import { activeBleeders, fieldBlood } from './bleeding';
-import { effectiveOpen } from './tissue';
+import { findOrgan, organUncovered } from './organs';
+import { effectiveOpen, retractedSideCount } from './tissue';
 import type { Incision, SimState } from './types';
 
 export { activeBleeders, fieldBlood };
@@ -21,6 +22,12 @@ export function incisionOpen(state: Readonly<SimState>, id: string): number {
   return inc ? effectiveOpen(inc) : 0;
 }
 
+/** Quantas bordas (0–2) da incisão o afastador está segurando abertas. */
+export function retractedSides(state: Readonly<SimState>, id: string): number {
+  const inc = incision(state, id);
+  return inc ? retractedSideCount(inc) : 0;
+}
+
 export function stitchesDone(state: Readonly<SimState>, id: string): number {
   return incision(state, id)?.stitches.filter((s) => s.done).length ?? 0;
 }
@@ -31,6 +38,12 @@ export function isSutured(state: Readonly<SimState>, id: string): boolean {
 
 export function organRemoved(state: Readonly<SimState>, id: string): boolean {
   return state.organs.find((o) => o.id === id)?.removed ?? false;
+}
+
+/** O órgão está no corpo e nenhum outro está por cima dele. */
+export function organExposed(state: Readonly<SimState>, id: string): boolean {
+  const organ = findOrgan(state, id);
+  return !!organ && !organ.removed && organUncovered(state, organ);
 }
 
 export function structureCut(state: Readonly<SimState>, id: string): boolean {

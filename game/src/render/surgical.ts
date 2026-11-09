@@ -4,10 +4,11 @@
 import { poolRadius } from '../sim/bleeding';
 import { organLifted, structureA } from '../sim/organs';
 import { openingHalfWidth } from '../sim/tissue';
-import { CAVITY_DEPTH } from '../sim/tuning';
+import { CAVITY_DEPTH, LIGATE_RADIUS } from '../sim/tuning';
 import type { Bleeder, Incision, Organ, SimState, Structure } from '../sim/types';
 import { samplePolyline } from '../sim/vec';
 import { COLORS } from './palette';
+import { BASIN_X, BASIN_Y } from './scene';
 
 /** Pontos ao longo da guia para o contorno da abertura. */
 const OUTLINE_SAMPLES = 40;
@@ -115,24 +116,38 @@ function organColors(organ: Organ): [string, string] {
   }
 }
 
-function drawOrgan(ctx: CanvasRenderingContext2D, organ: Organ, held: boolean): void {
+/** Desenha o órgão; `x`, `y` e `angle` trocam a pose (ex.: deitado na cuba). */
+function drawOrgan(
+  ctx: CanvasRenderingContext2D,
+  organ: Organ,
+  held: boolean,
+  x = organ.x,
+  y = organ.y,
+  angle = organ.angle,
+): void {
   const [fill, dark] = organColors(organ);
-  const ux = Math.cos(organ.angle) * organ.halfLength;
-  const uy = Math.sin(organ.angle) * organ.halfLength;
+  const ux = Math.cos(angle) * organ.halfLength;
+  const uy = Math.sin(angle) * organ.halfLength;
   ctx.lineCap = 'round';
-  if (held || organLifted(organ)) {
+  if (held || organLifted(organ) || organ.removed) {
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.lineWidth = organ.radius * 2 + 2;
     ctx.beginPath();
-    ctx.moveTo(organ.x - ux + 3, organ.y - uy + 4);
-    ctx.lineTo(organ.x + ux + 3, organ.y + uy + 4);
+    ctx.moveTo(x - ux + 3, y - uy + 4);
+    ctx.lineTo(x + ux + 3, y + uy + 4);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(x - ux, y - uy);
+  ctx.lineTo(x + ux, y + uy);
+  if (organ.kind === 'appendix') {
+    // Inflamado: halo avermelhado em volta.
+    ctx.strokeStyle = COLORS.inflamed;
+    ctx.lineWidth = organ.radius * 2 + 6;
     ctx.stroke();
   }
   ctx.strokeStyle = dark;
   ctx.lineWidth = organ.radius * 2 + 1.6;
-  ctx.beginPath();
-  ctx.moveTo(organ.x - ux, organ.y - uy);
-  ctx.lineTo(organ.x + ux, organ.y + uy);
   ctx.stroke();
   ctx.strokeStyle = fill;
   ctx.lineWidth = organ.radius * 2;
@@ -141,10 +156,10 @@ function drawOrgan(ctx: CanvasRenderingContext2D, organ: Organ, held: boolean): 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
   ctx.lineWidth = Math.max(1, organ.radius * 0.35);
   ctx.beginPath();
-  const nx = -Math.sin(organ.angle) * organ.radius * 0.45;
-  const ny = Math.cos(organ.angle) * organ.radius * 0.45;
-  ctx.moveTo(organ.x - ux * 0.7 - nx, organ.y - uy * 0.7 - ny);
-  ctx.lineTo(organ.x + ux * 0.7 - nx, organ.y + uy * 0.7 - ny);
+  const nx = -Math.sin(angle) * organ.radius * 0.45;
+  const ny = Math.cos(angle) * organ.radius * 0.45;
+  ctx.moveTo(x - ux * 0.7 - nx, y - uy * 0.7 - ny);
+  ctx.lineTo(x + ux * 0.7 - nx, y + uy * 0.7 - ny);
   ctx.stroke();
   if (organ.kind === 'bowel') {
     ctx.strokeStyle = dark;
@@ -152,8 +167,8 @@ function drawOrgan(ctx: CanvasRenderingContext2D, organ: Organ, held: boolean): 
     const segments = Math.max(2, Math.round(organ.halfLength / organ.radius));
     for (let i = 1; i < segments; i++) {
       const u = (i / segments) * 2 - 1;
-      const cx = organ.x + ux * u;
-      const cy = organ.y + uy * u;
+      const cx = x + ux * u;
+      const cy = y + uy * u;
       ctx.beginPath();
       ctx.moveTo(cx - nx * 2, cy - ny * 2);
       ctx.lineTo(cx + nx * 2, cy + ny * 2);
@@ -162,42 +177,137 @@ function drawOrgan(ctx: CanvasRenderingContext2D, organ: Organ, held: boolean): 
   }
 }
 
-function drawStructure(ctx: CanvasRenderingContext2D, state: SimState, s: Structure): void {
+/** Meia-folga (mm) desenhada de cada lado do corte de uma estrutura. */
+const CUT_GAP = 1.5;
+
+/** Traço de (x0, y0) a (x1, y1), encurtado `trim0`/`trim1` mm em cada ponta. */
+function trimmedLine(
+  ctx: CanvasRenderingContext2D,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  trim0: number,
+  trim1: number,
+): void {
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  if (len <= trim0 + trim1) return;
+  const ux = (x1 - x0) / len;
+  const uy = (y1 - y0) / len;
+  ctx.moveTo(x0 + ux * trim0, y0 + uy * trim0);
+  ctx.lineTo(x1 - ux * trim1, y1 - uy * trim1);
+}
+
+/**
+ * Vaso ou ligamento. Inteiro (`whole`), de `a` a `b`. Cortado, em duas partes:
+ * o coto (`stump`), parado do ponto do corte até `b`, e o pedaço (`piece`) que
+ * vai junto com o órgão, de `a` até o corte.
+ */
+function drawStructure(
+  ctx: CanvasRenderingContext2D,
+  state: SimState,
+  s: Structure,
+  part: 'whole' | 'stump' | 'piece',
+): void {
   structureA(state, s, point);
   const ax = point.x;
   const ay = point.y;
-  const dx = s.bx - ax;
-  const dy = s.by - ay;
-  const len = Math.hypot(dx, dy) || 1;
   const vessel = s.kind === 'vessel';
   ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (part === 'whole') trimmedLine(ctx, ax, ay, s.bx, s.by, 0, 0);
+  else if (part === 'stump') trimmedLine(ctx, s.cutX, s.cutY, s.bx, s.by, CUT_GAP, 0);
+  else trimmedLine(ctx, ax, ay, ax + s.pieceDx, ay + s.pieceDy, 0, CUT_GAP);
   ctx.strokeStyle = vessel ? COLORS.vessel : COLORS.band;
   ctx.lineWidth = vessel ? 2.4 : 4;
-  ctx.beginPath();
-  if (s.cut) {
-    const gap = 3 / len;
-    const u0 = Math.max(0, s.cutAt - gap);
-    const u1 = Math.min(1, s.cutAt + gap);
-    ctx.moveTo(ax, ay);
-    ctx.lineTo(ax + dx * u0, ay + dy * u0);
-    ctx.moveTo(ax + dx * u1, ay + dy * u1);
-    ctx.lineTo(s.bx, s.by);
-  } else {
-    ctx.moveTo(ax, ay);
-    ctx.lineTo(s.bx, s.by);
-  }
   ctx.stroke();
   if (!vessel) {
     ctx.strokeStyle = COLORS.bandDark;
     ctx.lineWidth = 0.8;
     ctx.stroke();
   }
-  if (s.ligated) {
-    const u = s.cut ? Math.max(0, s.cutAt - 6 / len) : 0.5;
-    ctx.fillStyle = COLORS.thread;
+
+  // Marca da ligadura (onde amarrar), enquanto não amarrou.
+  if (part === 'whole' && s.ligateAt >= 0 && !s.ligated) {
+    ctx.strokeStyle = COLORS.mark;
+    ctx.lineWidth = 0.9;
+    ctx.setLineDash([2, 1.5]);
     ctx.beginPath();
-    ctx.arc(ax + dx * u, ay + dy * u, 1.8, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(ax + (s.bx - ax) * s.ligateAt, ay + (s.by - ay) * s.ligateAt, LIGATE_RADIUS * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (!s.ligated) return;
+  // Nó: na estrutura inteira, ou na parte cortada em que ele ficou.
+  let kx: number;
+  let ky: number;
+  if (part === 'whole') {
+    kx = ax + (s.bx - ax) * s.ligatedAt;
+    ky = ay + (s.by - ay) * s.ligatedAt;
+  } else if (s.ligatedAt <= s.cutAt) {
+    if (part !== 'piece') return;
+    const f = s.cutAt > 0 ? s.ligatedAt / s.cutAt : 0;
+    kx = ax + s.pieceDx * f;
+    ky = ay + s.pieceDy * f;
+  } else {
+    if (part !== 'stump') return;
+    // `a` na hora do corte = ponto do corte menos o pedaço.
+    const a0x = s.cutX - s.pieceDx;
+    const a0y = s.cutY - s.pieceDy;
+    kx = a0x + (s.bx - a0x) * s.ligatedAt;
+    ky = a0y + (s.by - a0y) * s.ligatedAt;
+  }
+  ctx.fillStyle = COLORS.thread;
+  ctx.beginPath();
+  ctx.arc(kx, ky, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Lâminas do afastador nas bordas puxadas (`retractedSides`), no meio da
+ * incisão, com o cabo saindo para fora.
+ */
+function drawRetractor(ctx: CanvasRenderingContext2D, inc: Incision): void {
+  if (inc.retractedSides === 0 || inc.openWidth <= 0) return;
+  samplePolyline(inc.guide, 0.5, sample);
+  const w = openingHalfWidth(inc, 0.5);
+  const tx = -sample.ny;
+  const ty = sample.nx;
+  ctx.lineCap = 'round';
+  for (const side of [1, -1] as const) {
+    if (!(inc.retractedSides & (side > 0 ? 1 : 2))) continue;
+    const nx = sample.nx * side;
+    const ny = sample.ny * side;
+    const bx = sample.x + nx * (w + 1);
+    const by = sample.y + ny * (w + 1);
+    for (const [color, width] of [
+      [COLORS.metalDark, 5.4],
+      [COLORS.metal, 3.6],
+    ] as const) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      // Lâmina ao longo da borda, com as pontas viradas para dentro.
+      ctx.moveTo(bx - tx * 14 - nx * 3, by - ty * 14 - ny * 3);
+      ctx.lineTo(bx - tx * 12, by - ty * 12);
+      ctx.lineTo(bx + tx * 12, by + ty * 12);
+      ctx.lineTo(bx + tx * 14 - nx * 3, by + ty * 14 - ny * 3);
+      // Cabo para fora.
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + nx * 46, by + ny * 46);
+      ctx.stroke();
+    }
+  }
+}
+
+/** Órgãos retirados, deitados na cuba (só no abdome, onde há cuba). */
+function drawRemovedOrgans(ctx: CanvasRenderingContext2D, state: SimState): void {
+  if (state.site !== 'abdomen') return;
+  let slot = 0;
+  for (const organ of state.organs) {
+    if (!organ.removed) continue;
+    drawOrgan(ctx, organ, false, BASIN_X + 4, BASIN_Y - 24 + slot * 16, Math.PI / 2 - 0.25);
+    slot++;
   }
 }
 
@@ -360,7 +470,14 @@ export function drawSurgical(ctx: CanvasRenderingContext2D, state: SimState, tim
     state.structures.forEach((s) => {
       if (s.kind === 'thread') return;
       const organ = s.organId ? state.organs.find((o) => o.id === s.organId) : undefined;
-      if (!organ || (!organLifted(organ) && !organ.removed)) drawStructure(ctx, state, s);
+      const inside = !organ || (!organLifted(organ) && !organ.removed);
+      if (!s.cut) {
+        if (inside) drawStructure(ctx, state, s, 'whole');
+        return;
+      }
+      // O coto fica na cavidade; o pedaço vai com o órgão.
+      drawStructure(ctx, state, s, 'stump');
+      if (inside) drawStructure(ctx, state, s, 'piece');
     });
     state.organs.forEach((organ, i) => {
       if (!organ.removed && !organLifted(organ) && i !== held) drawOrgan(ctx, organ, false);
@@ -371,12 +488,15 @@ export function drawSurgical(ctx: CanvasRenderingContext2D, state: SimState, tim
   state.structures.forEach((s) => {
     const organ = s.organId ? state.organs.find((o) => o.id === s.organId) : undefined;
     if (organ && !organ.removed && (organLifted(organ) || state.organs.indexOf(organ) === held)) {
-      drawStructure(ctx, state, s);
+      drawStructure(ctx, state, s, s.cut ? 'piece' : 'whole');
     }
   });
   state.organs.forEach((organ, i) => {
     if (!organ.removed && (organLifted(organ) || i === held)) drawOrgan(ctx, organ, i === held);
   });
+
+  drawRemovedOrgans(ctx, state);
+  for (const inc of state.incisions) drawRetractor(ctx, inc);
 
   for (const b of state.bleeders) drawPool(ctx, b);
   for (const b of state.bleeders) drawBleeder(ctx, b, time);

@@ -67,13 +67,24 @@ o formato.
   vitais seguem a perda; `ARREST_BLOOD_LOSS` = parada = derrota.
 - Nota (`sim/score.ts`): precisão 50% / tempo 25% / sangue 25%; derrota = 0.
 
-## UI provisória
+## UI (Liquid Glass)
 
-`game/src/ui/provisional.ts` é **provisória**: texto simples só para jogar e
-testar o motor. O agente frontend substitui por menus e HUD no design system
-Liquid Glass (accent teal `#14b8a6`), usando só a `GameApi` — o ECG vem de
-`readEcg`, os vitais e a etapa de `getState`/`subscribe`. Pode apagar o
-arquivo inteiro (e o `provisional.css`) ao trocar.
+Menus e HUD em `game/src/ui/` usam o design system Liquid Glass.
+`game/src/design-system.css` é cópia literal (nunca edite; para atualizar,
+copie de novo de `michelvvp/designSystemLiquidGlass`) e
+`game/src/DESIGN-SYSTEM.md` é a referência de HTML canônico. O estilo do app
+(accent teal, HUD, monitor) fica em `game/src/theme.css`, só com tokens: sem
+cor escrita em componente.
+
+- `ui/mount.ts` monta tudo; `menu.ts`, `hud.ts` e `overlays.ts` (pausa e
+  resultado) são telas montadas uma vez, atualizadas por `update(state)`.
+- A `ui/` fala só pela `GameApi`. O ECG vem de `readEcg`, desenhado a cada
+  quadro no canvas do monitor (cores lidas dos tokens do tema).
+- `#ui` tem `pointer-events: none`; só painéis (`.card`, modais) recebem
+  clique, então botão do HUD não vira ação de instrumento. O HUD fica nas
+  bordas: bandeja à esquerda, monitor no canto superior direito.
+- Ícones dos instrumentos em `ui/icons.ts` (SVG inline). Recordes e estrelas
+  vêm de `SurgeryInfo` (`bestScore`, `bestStars`, `bestTimeSec`).
 
 ## Verificação
 

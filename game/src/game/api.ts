@@ -34,6 +34,8 @@ export interface SurgeryInfo {
   parTimeSec: number;
   /** Melhor nota salva (null = nunca concluída). */
   bestScore: number | null;
+  /** Estrelas da melhor nota (null = nunca concluída). */
+  bestStars: 1 | 2 | 3 | null;
   /** Melhor tempo (s) entre as vezes concluídas. */
   bestTimeSec: number | null;
 }

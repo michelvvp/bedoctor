@@ -1,5 +1,5 @@
 // Cirurgia "Teste": só prova o formato das etapas (cortar a linha e dar 3
-// pontos). As cirurgias de verdade vêm nas próximas tasks.
+// pontos). Não aparece no menu: é usada só nos testes.
 
 import { isSutured, noActiveBleeding, incisionDepth, type ProcedureDef } from '../sim';
 

@@ -72,9 +72,13 @@ export interface Organ {
   removed: boolean;
 }
 
-export type StructureKind = 'vessel' | 'band';
+/**
+ * - `vessel`, `band`: vaso e ligamento/meso, dentro da cavidade.
+ * - `thread`: sobra de fio de sutura, em cima da pele (alcançável sempre).
+ */
+export type StructureKind = 'vessel' | 'band' | 'thread';
 
-/** Algo que se corta com tesoura (vaso, ligamento, meso). Segmento a–b. */
+/** Algo que se corta com tesoura (vaso, ligamento, meso, fio). Segmento a–b. */
 export interface Structure {
   id: string;
   kind: StructureKind;
@@ -164,6 +168,9 @@ export interface CutStats {
 
 export type Outcome = 'running' | 'complete' | 'arrest';
 
+/** Parte do corpo operada: o render desenha a mesa e o paciente de acordo. */
+export type BodySite = 'abdomen' | 'forearm';
+
 export interface ScoreResult {
   outcome: Exclude<Outcome, 'running'>;
   /** Nota 0–100. */
@@ -184,6 +191,8 @@ export interface ScoreResult {
 }
 
 export interface SimState {
+  /** Parte do corpo operada (vem de `ProcedureDef.site`). */
+  site: BodySite;
   /** Tempo de cirurgia (s). */
   time: number;
   outcome: Outcome;

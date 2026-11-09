@@ -41,6 +41,13 @@ export function structureLigated(state: Readonly<SimState>, id: string): boolean
   return state.structures.find((s) => s.id === id)?.ligated ?? false;
 }
 
+/** Sangue (ml) nas poças que não sangram mais: manchas derramadas a limpar. */
+export function spilledBlood(state: Readonly<SimState>): number {
+  let total = 0;
+  for (const b of state.bleeders) if (!b.active) total += b.pool;
+  return total;
+}
+
 /** Nenhum sangramento ativo. */
 export function noActiveBleeding(state: Readonly<SimState>): boolean {
   return activeBleeders(state) === 0;

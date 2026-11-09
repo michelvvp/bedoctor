@@ -56,7 +56,7 @@ export class Renderer {
     ctx.fillRect(0, 0, this.width, this.height);
 
     ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, dpr * view.cx, dpr * view.cy);
-    drawScene(ctx);
+    drawScene(ctx, state?.site ?? 'abdomen');
     if (state) drawSurgical(ctx, state, time);
 
     if (cursor.visible && cursor.inside) {

@@ -23,19 +23,30 @@ import {
 import type { Bleeder, SimState } from './types';
 import { distance } from './vec';
 
-export function addBleeder(core: SimCore, x: number, y: number, rate: number): Bleeder {
+/**
+ * Cria um sangramento. Com `active` falso é só sangue derramado (mancha com
+ * `pool` ml, sem vazão) e não emite evento.
+ */
+export function addBleeder(
+  core: SimCore,
+  x: number,
+  y: number,
+  rate: number,
+  pool = 0,
+  active = true,
+): Bleeder {
   const state = core.state;
   const bleeder: Bleeder = {
     id: state.nextBleederId++,
     x,
     y,
     rate,
-    active: true,
-    pool: 0,
+    active,
+    pool: Math.min(POOL_MAX_ML, pool),
     pressure: 0,
   };
   state.bleeders.push(bleeder);
-  core.emit('bleedStart', x, y, rate);
+  if (active) core.emit('bleedStart', x, y, rate);
   return bleeder;
 }
 
